@@ -1,3 +1,4 @@
+using quick_share.api.Data;
 using quick_share.api.Endpoints;
 using quick_share.api.Logic;
 using quick_share.api.Logic.Contracts;
@@ -12,6 +13,7 @@ builder.Services.AddOpenApiDocument(config =>
     config.Version = "v1";
 });
 
+builder.Services.AddScoped<RedisDataContext>();
 builder.Services.AddScoped<ISessionService, SessionService>();
 
 var app = builder.Build();
