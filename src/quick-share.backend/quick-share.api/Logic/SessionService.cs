@@ -1,22 +1,31 @@
 using quick_share.api.Models;
 using quick_share.api.Logic.Contracts;
 using quick_share.api.Logic.Utils;
+using quick_share.api.Data;
+using System.Text.Json;
 
 namespace quick_share.api.Logic;
 
-public class SessionService : ISessionService
+public class SessionService(RedisDataContext redis) : ISessionService
 {
     public async Task<string> Start()
     {
         var session = new Session { Id = Generator.NewId() };
-
-        //save "session" into cache db
+        await redis.SaveValueAsync(session.Id,session.ToString());
         return session.Id;
     }
 
-    public Task<Session> GetSession(string id)
+    public async Task<Session?> GetSession(string sessionId)
     {
-        throw new NotImplementedException();
+        var value = await redis.GetValueAsync(sessionId);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            //throw new KeyNotFoundException();
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<Session>(value);
     }
 
     public Task<bool> End(string sessionId)
