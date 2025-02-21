@@ -10,4 +10,5 @@ public interface ISessionService
     Task<string?> AddSimpleItem(Session session, string itemValue);
     Task<string?> AddBinaryItem(Session session, IFormFile formFile);
     Task<bool> DeleteItem(Session session, Guid itemId);
+    Task<SharedItemBinaryResult?> GetBinaryItem(Session session, Guid itemId);
 }

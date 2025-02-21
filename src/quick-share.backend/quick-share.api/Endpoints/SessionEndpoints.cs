@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
 using quick_share.api.Logic.Contracts;
 using quick_share.api.Models;
@@ -17,6 +18,7 @@ public static class SessionEndpoints
         groupItems.MapPost("/{sessionId}/simpleItem", PostSimpleItem);
         groupItems.MapPost("/{sessionId}/binaryItem", PostBinaryItem);
         groupItems.MapDelete("/{sessionId}/{itemId}", DeleteItem);
+        groupItems.MapGet("/{sessionId}/{itemId}", GetBinaryItem);
     }
 
     static async Task<IResult> GetStart([FromServices]ISessionService service)
@@ -68,6 +70,18 @@ public static class SessionEndpoints
 
         return await service.DeleteItem(session, itemId)
             ? TypedResults.NoContent()
+            : TypedResults.NotFound();
+    }
+
+    static async Task<IResult> GetBinaryItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
+    {
+        var session = await service.GetSession(sessionId);
+        //validations should be moved to validation class
+        if (session is null) { return TypedResults.NotFound(); }
+
+        return await service.GetBinaryItem(session, itemId)
+            is SharedItemBinaryResult result
+            ? TypedResults.File(result.Data!, MediaTypeNames.Application.Octet, result.Filename)
             : TypedResults.NotFound();
     }
 }

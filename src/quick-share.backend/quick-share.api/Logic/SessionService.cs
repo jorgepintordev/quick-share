@@ -84,11 +84,7 @@ public class SessionService(RedisDataContext redis) : ISessionService
         
         session.Items?.Remove(item);
 
-        Console.WriteLine($"item: {item}");
-        Console.WriteLine($"item.Type: {item?.GetType()}");
-
         var itemBinary = item?.ToSharedItemBinary();
-        Console.WriteLine($"itemBinary: {itemBinary}");
 
         if (!string.IsNullOrWhiteSpace(itemBinary?.FileExtension))
         {
@@ -98,11 +94,36 @@ public class SessionService(RedisDataContext redis) : ISessionService
             string fileExtension = Path.GetExtension(itemBinary.Value);
             string filePath = $"{uploadPath}/{itemBinary.Id}{fileExtension}";
 
-            Console.WriteLine($"file to delete: {filePath}");
             File.Delete(filePath);
         }
 
         await redis.SaveValueAsync(session.Id,session.ToString());
         return true;
+    }
+
+    public async Task<SharedItemBinaryResult?> GetBinaryItem(Session session, Guid itemId)
+    {
+        var item = session.Items?.Find(item => item.ToSharedItem()?.Id == itemId);
+
+        if (item is null)
+            return null;
+        
+        var itemBinary = item?.ToSharedItemBinary();
+
+        if (string.IsNullOrWhiteSpace(itemBinary?.FileExtension))
+            return null;
+        
+        //return file
+        string basePath = Directory.GetCurrentDirectory();
+        string uploadPath = $"{basePath}/uploads/{session.Id}";
+        string fileExtension = Path.GetExtension(itemBinary.Value);
+        string filePath = $"{uploadPath}/{itemBinary.Id}{fileExtension}";
+
+        var result = new SharedItemBinaryResult() {
+            Filename = itemBinary.Value,
+            Data = File.OpenRead(filePath)
+        };
+
+        return result;
     }
 }
