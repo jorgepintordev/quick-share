@@ -11,12 +11,17 @@ public class RedisDataContext
     {
         expiry ??= TimeSpan.FromDays(1); // Default expiration is 1 day
         await db.StringSetAsync(key, value, expiry);
-        // Console.WriteLine($"Saved: {key} -> {value} (Expires in: {expiry.Value})");
     }
 
     public async Task<string?> GetValueAsync(string key)
     {
         var value = await db.StringGetAsync(key);
         return value.HasValue ? value.ToString() : null;
+    }
+
+    public async Task<bool> DeleteValueAsync(string key)
+    {
+        var result = await db.StringGetDeleteAsync(key);
+        return result.HasValue;
     }
 }

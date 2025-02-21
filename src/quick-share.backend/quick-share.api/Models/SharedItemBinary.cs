@@ -2,11 +2,9 @@ using System.Text.Json;
 
 namespace quick_share.api.Models;
 
-public class SharedItem
+public class SharedItemBinary : SharedItem
 {
-    public required Guid Id { get; set; } = Guid.NewGuid();
-    public required string Value { get; set; }
-
+    public string? FileExtension { get; set; }
     public override string ToString()
     {
         return JsonSerializer.Serialize(this);

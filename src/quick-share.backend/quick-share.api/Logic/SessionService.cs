@@ -28,23 +28,81 @@ public class SessionService(RedisDataContext redis) : ISessionService
         return JsonSerializer.Deserialize<Session>(value);
     }
 
-    public Task<bool> End(string sessionId)
+    public async Task<bool> End(string sessionId)
     {
-        throw new NotImplementedException();
+        return await redis.DeleteValueAsync(sessionId);
     }
 
-    public Task<string> AddSimpleItem(string sessionId)
+    public async Task<string?> AddSimpleItem(Session session, string itemValue)
     {
-        throw new NotImplementedException();
+        // ArgumentNullException.ThrowIfNullOrWhiteSpace(itemValue); //para las validaciones ver mejor una clase de validaciones
+        
+        var newItem = new SharedItem { Id = Guid.NewGuid(), Value = itemValue };
+        (session.Items ??= []).Add(newItem);
+
+        await redis.SaveValueAsync(session.Id,session.ToString());
+
+        return newItem.Id.ToString();
     }
 
-    public Task<string> AddBinaryItem(string sessionId)
+    public async Task<string?> AddBinaryItem(Session session, IFormFile formFile)
     {
-        throw new NotImplementedException();
+        string basePath = Directory.GetCurrentDirectory();
+        string uploadPath = $"{basePath}/uploads/{session.Id}";
+        string fileExtension = Path.GetExtension(formFile.FileName);
+        var newItem = new SharedItemBinary { Id = Guid.NewGuid(), Value = formFile.FileName, FileExtension = fileExtension };
+        
+        string filePath = $"{uploadPath}/{newItem.Id}{fileExtension}";
+
+        //upload file to path
+        try
+        {
+            //create directory path
+            Directory.CreateDirectory(uploadPath);
+            using var fileStream = File.Create(filePath);
+            formFile.CopyTo(fileStream);
+            fileStream.Close();
+        } catch(Exception)
+        {
+            //log ex
+            return null;
+        }
+        
+        // save data into redis
+        (session.Items ??= []).Add(newItem);
+        await redis.SaveValueAsync(session.Id,session.ToString());
+
+        return newItem.Id.ToString();
     }
 
-    public Task<bool> DeleteItem(string sessionId, string itemId)
+    public async Task<bool> DeleteItem(Session session, Guid itemId)
     {
-        throw new NotImplementedException();
+        var item = session.Items?.Find(item => item.ToSharedItem()?.Id == itemId);
+
+        if (item is null)
+            return false;
+        
+        session.Items?.Remove(item);
+
+        Console.WriteLine($"item: {item}");
+        Console.WriteLine($"item.Type: {item?.GetType()}");
+
+        var itemBinary = item?.ToSharedItemBinary();
+        Console.WriteLine($"itemBinary: {itemBinary}");
+
+        if (!string.IsNullOrWhiteSpace(itemBinary?.FileExtension))
+        {
+            //delete file
+            string basePath = Directory.GetCurrentDirectory();
+            string uploadPath = $"{basePath}/uploads/{session.Id}";
+            string fileExtension = Path.GetExtension(itemBinary.Value);
+            string filePath = $"{uploadPath}/{itemBinary.Id}{fileExtension}";
+
+            Console.WriteLine($"file to delete: {filePath}");
+            File.Delete(filePath);
+        }
+
+        await redis.SaveValueAsync(session.Id,session.ToString());
+        return true;
     }
 }

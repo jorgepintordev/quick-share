@@ -7,7 +7,7 @@ public interface ISessionService
     Task<string> Start();
     Task<Session?> GetSession(string sessionId);
     Task<bool> End(string sessionId);
-    Task<string> AddSimpleItem(string sessionId);
-    Task<string> AddBinaryItem(string sessionId);
-    Task<bool> DeleteItem(string sessionId, string itemId);
+    Task<string?> AddSimpleItem(Session session, string itemValue);
+    Task<string?> AddBinaryItem(Session session, IFormFile formFile);
+    Task<bool> DeleteItem(Session session, Guid itemId);
 }
