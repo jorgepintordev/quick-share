@@ -9,7 +9,7 @@ using quick_share.api.Business.Consts;
 
 namespace quick_share.api.Business.Services;
 
-public class SessionService(RedisDataContext redis) : ISessionService
+public class SessionService(RedisDataContext redis, ILogger<SessionService> log) : ISessionService
 {
     public async Task<Result<string>> Start()
     {
@@ -17,9 +17,11 @@ public class SessionService(RedisDataContext redis) : ISessionService
         var result = await redis.SaveValueAsync(session.Id,session.ToString());
         if (!result)
         {
+            log.LogError(SessionServiceErrors.SessionStartFail);
             return Result.Fail(SessionServiceErrors.SessionStartFail);
         }
 
+        log.LogTrace("Start session Ok {SessionId}", session.Id);
         return Result.Ok(session.Id);
     }
 
@@ -27,6 +29,7 @@ public class SessionService(RedisDataContext redis) : ISessionService
     {
         if (string.IsNullOrWhiteSpace(sessionId))
         {
+            log.LogError(SessionServiceErrors.SessionIdEmpty);
             return Result.Fail<Session>(SessionServiceErrors.SessionIdEmpty);
         }
 
@@ -34,15 +37,18 @@ public class SessionService(RedisDataContext redis) : ISessionService
 
         if (string.IsNullOrWhiteSpace(value))
         {
+            log.LogError(SessionServiceErrors.SessionNotFound + " {SessionId}", sessionId);
             return Result.Fail<Session>(SessionServiceErrors.SessionNotFound);
         }
 
         var sessionValue = JsonSerializer.Deserialize<Session>(value);
         if (sessionValue is null)
         {
+            log.LogError(SessionServiceErrors.DeserializeEmpty + " {SessionId} {RedisValue}", sessionId, value);
             return Result.Fail<Session>(SessionServiceErrors.DeserializeEmpty);
         }
 
+        log.LogTrace("Get session Ok {Session}", sessionValue);
         return Result.Ok(sessionValue);
     }
 
@@ -50,7 +56,14 @@ public class SessionService(RedisDataContext redis) : ISessionService
     {
         var result = await redis.DeleteValueAsync(sessionId);
 
-        return Result.OkIf(result, SessionServiceErrors.SessionNotFound);
+        if (!result)
+        {
+            log.LogError(SessionServiceErrors.SessionNotFound + " {SessionId}", sessionId);
+            return Result.Fail(SessionServiceErrors.SessionNotFound);
+        }
+
+        log.LogTrace("End session Ok {SessionId}", sessionId);
+        return Result.Ok();
     }
 
     public async Task<Result<string>> AddSimpleItem(Session session, string itemValue)
@@ -64,9 +77,11 @@ public class SessionService(RedisDataContext redis) : ISessionService
 
         if (!result)
         {
+            log.LogError(SessionServiceErrors.SimpleItemAddFail + " {SessionId} {Item}", session.Id, itemValue);
             return Result.Fail<string>(SessionServiceErrors.SimpleItemAddFail);
         }
 
+        log.LogTrace("Add simple item into session Ok {SessionId} {ItemId}", session.Id, newItem.Id);
         return Result.Ok(newItem.Id.ToString());
     }
 
@@ -84,12 +99,15 @@ public class SessionService(RedisDataContext redis) : ISessionService
         {
             //create directory path
             Directory.CreateDirectory(uploadPath);
+            log.LogTrace("Create server upload path completed {UploadPath}", uploadPath);
+
             using var fileStream = File.Create(filePath);
             formFile.CopyTo(fileStream);
             fileStream.Close();
-        } catch(Exception)
+            log.LogTrace("Binary uploaded to server completed {FilePath}", filePath);
+        } catch(Exception ex)
         {
-            //log ex
+            log.LogError(ex, SessionServiceErrors.BinaryItemServerCopyFail + " {SessionId} {@Exception}", session.Id, ex);
             return Result.Fail<string>(SessionServiceErrors.BinaryItemServerCopyFail);
         }
         
@@ -100,9 +118,11 @@ public class SessionService(RedisDataContext redis) : ISessionService
         if (!result)
         {
             //delete file?
+            log.LogError(SessionServiceErrors.BinaryItemAddFail + " {SessionId}", session.Id);
             return Result.Fail<string>(SessionServiceErrors.BinaryItemAddFail);
         }
 
+        log.LogTrace("Add binary item into session Ok {SessionId} {ItemId}", session.Id, newItem.Id);
         return Result.Ok(newItem.Id.ToString());
     }
 
@@ -111,7 +131,10 @@ public class SessionService(RedisDataContext redis) : ISessionService
         var item = session.Items?.Find(item => item.ToSharedItem()?.Id == itemId);
 
         if (item is null)
+        {
+            log.LogError(SessionServiceErrors.SessionItemNotFound + " {SessionId} {ItemId}", session.Id, itemId);
             return Result.Fail(SessionServiceErrors.SessionItemNotFound);
+        }
         
         session.Items?.Remove(item);
 
@@ -128,17 +151,25 @@ public class SessionService(RedisDataContext redis) : ISessionService
             try
             {
                 File.Delete(filePath);
+                log.LogTrace("Binary deleted from server completed {FilePath}", filePath);
             }
-            catch(Exception)
+            catch(Exception ex)
             {
-                //log ex
+                log.LogError(ex, SessionServiceErrors.BinaryItemServerDeleteFail + " {SessionId} {ItemId} {@Exception}", session.Id, itemId, ex);
                 return Result.Fail(SessionServiceErrors.BinaryItemServerDeleteFail);
             }
         }
 
         var result = await redis.SaveValueAsync(session.Id,session.ToString());
 
-        return Result.OkIf(result, SessionServiceErrors.SessionItemDeleteFail);
+        if (!result)
+        {
+            log.LogError(SessionServiceErrors.SessionItemDeleteFail + " {SessionId} {ItemId}", session.Id, itemId);
+            return Result.Fail(SessionServiceErrors.SessionItemDeleteFail);
+        }
+
+        log.LogTrace("Delete item from session Ok {SessionId} {ItemId}", session.Id, itemId);
+        return Result.Ok();
     }
 
     public Result<SharedItemBinaryResult> GetBinaryItem(Session session, Guid itemId)
@@ -146,12 +177,18 @@ public class SessionService(RedisDataContext redis) : ISessionService
         var item = session.Items?.Find(item => item.ToSharedItem()?.Id == itemId);
 
         if (item is null)
+        {
+            log.LogError(SessionServiceErrors.SessionItemNotFound + " {SessionId} {ItemId}", session.Id, itemId);
             return Result.Fail(SessionServiceErrors.SessionItemNotFound);
+        }
         
         var itemBinary = item?.ToSharedItemBinary();
 
         if (string.IsNullOrWhiteSpace(itemBinary?.FileExtension))
+        {
+            log.LogError(SessionServiceErrors.SessionBinaryItemNotFound + " {SessionId} {@Item}", session.Id, itemBinary);
             return Result.Fail(SessionServiceErrors.SessionBinaryItemNotFound);
+        }
         
         //return file
         string basePath = Directory.GetCurrentDirectory();
@@ -159,11 +196,20 @@ public class SessionService(RedisDataContext redis) : ISessionService
         string fileExtension = Path.GetExtension(itemBinary.Value);
         string filePath = $"{uploadPath}/{itemBinary.Id}{fileExtension}";
 
-        var result = new SharedItemBinaryResult() {
-            Filename = itemBinary.Value,
-            Data = File.OpenRead(filePath)
-        };
+        try
+        {
+            var result = new SharedItemBinaryResult() {
+                Filename = itemBinary.Value,
+                Data = File.OpenRead(filePath)
+            };
 
-        return Result.Ok(result);
+            log.LogTrace("Get binary item from session Ok {SessionId} {ItemId}", session.Id, itemId);
+            return Result.Ok(result);
+        }
+        catch(Exception ex)
+        {
+            log.LogError(ex, SessionServiceErrors.BinaryItemGetFail + " {SessionId} {ItemId} {@Exception}", session.Id, itemId, ex);
+            return Result.Fail(SessionServiceErrors.BinaryItemGetFail);
+        }
     }
 }

@@ -13,4 +13,5 @@ public static class SessionServiceErrors
     public static string BinaryItemAddFail = "Unable to add binary item to session";
     public static string BinaryItemServerCopyFail = "Unable to copy binary on the local path";
     public static string BinaryItemServerDeleteFail = "Unable to delete binary on the local path";
+    public static string BinaryItemGetFail = "Unable to get binary from server";
 }

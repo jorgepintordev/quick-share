@@ -2,9 +2,13 @@ using quick_share.api.Data;
 using quick_share.api.Endpoints;
 using quick_share.api.Business.Services;
 using quick_share.api.Business.Contracts;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseSerilog((context, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration));
+    
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApiDocument(config =>
 {
@@ -29,6 +33,8 @@ if (app.Environment.IsDevelopment())
         config.DocExpansion = "list";
     });
 }
+
+app.UseSerilogRequestLogging();
 
 app.MapSessionEndpoints();
 

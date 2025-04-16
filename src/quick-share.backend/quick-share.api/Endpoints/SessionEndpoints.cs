@@ -1,7 +1,7 @@
 using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
 using quick_share.api.Business.Contracts;
-using quick_share.api.Business.Models;
+using Serilog;
 
 namespace quick_share.api.Endpoints;
 
@@ -23,97 +23,146 @@ public static class SessionEndpoints
 
     static async Task<IResult> GetStart([FromServices]ISessionService service)
     {
-        var result = await service.Start();
-
-        if (result.IsFailed)
+        try
         {
-            //add fail messages to log
+            var result = await service.Start();
+
+            if (result.IsFailed)
+            {
+                return TypedResults.StatusCode(500);
+            }
+            return TypedResults.Created(result.Value);
+        }
+        catch(Exception ex)
+        {
+            Log.Fatal(ex, "Unhandled exception {@ex}", ex);
             return TypedResults.StatusCode(500);
         }
-        return TypedResults.Created(result.Value);
     }
 
     static async Task<IResult> GetSession(string sessionId, [FromServices]ISessionService service)
     {
-        var result = await service.GetSession(sessionId);
-
-        if (result.IsFailed)
+        try
         {
-            //add fail messages to log
-            return TypedResults.NotFound();
+            var result = await service.GetSession(sessionId);
+
+            if (result.IsFailed)
+            {
+                return TypedResults.NotFound();
+            }
+            return TypedResults.Ok(result.Value);
         }
-        return TypedResults.Ok(result.Value);
+        catch(Exception ex)
+        {
+            Log.Fatal(ex, "Unhandled exception {@ex}", ex);
+            return TypedResults.StatusCode(500);
+        }
     }
 
     static async Task<IResult> GetEnd(string sessionId, [FromServices]ISessionService service)
     {
-        var result = await service.End(sessionId);
-
-        if (result.IsFailed)
+        try
         {
-            //add fail messages to log
-            return TypedResults.NotFound();
+            var result = await service.End(sessionId);
+
+            if (result.IsFailed)
+            {
+                return TypedResults.NotFound();
+            }
+            return TypedResults.NoContent();
         }
-        return TypedResults.NoContent();
-    }
-
-    static async Task<IResult> PostSimpleItem(string sessionId, string value, [FromServices]ISessionService service)
-    {
-        var session = await service.GetSession(sessionId);
-        if (session.IsFailed) { return TypedResults.NotFound(); }
-
-        var result = await service.AddSimpleItem(session.Value, value);
-
-        if (result.IsFailed)
+        catch(Exception ex)
         {
-            //add fail messages to log
+            Log.Fatal(ex, "Unhandled exception {@ex}", ex);
             return TypedResults.StatusCode(500);
         }
-        return TypedResults.Created(result.Value);
+    }
+
+    static async Task<IResult> PostSimpleItem(string sessionId, [FromBody]string value, [FromServices]ISessionService service)
+    {
+        try
+        {
+            var session = await service.GetSession(sessionId);
+            if (session.IsFailed) { return TypedResults.NotFound(); }
+
+            var result = await service.AddSimpleItem(session.Value, value);
+
+            if (result.IsFailed)
+            {
+                return TypedResults.StatusCode(500);
+            }
+            return TypedResults.Created(result.Value);
+        }
+        catch(Exception ex)
+        {
+            Log.Fatal(ex, "Unhandled exception {@ex}", ex);
+            return TypedResults.StatusCode(500);
+        }
     }
 
     static async Task<IResult> PostBinaryItem(string sessionId, IFormFile formFile, [FromServices]ISessionService service)
     {
-        var session = await service.GetSession(sessionId);
-        if (session.IsFailed) { return TypedResults.NotFound(); }
-
-        var result = await service.AddBinaryItem(session.Value, formFile);
-        
-        if (result.IsFailed)
+        try
         {
-            //add fail messages to log
+            var session = await service.GetSession(sessionId);
+            if (session.IsFailed) { return TypedResults.NotFound(); }
+
+            var result = await service.AddBinaryItem(session.Value, formFile);
+            
+            if (result.IsFailed)
+            {
+                return TypedResults.StatusCode(500);
+            }
+            return TypedResults.Created(result.Value);
+        }
+        catch(Exception ex)
+        {
+            Log.Fatal(ex, "Unhandled exception {@ex}", ex);
             return TypedResults.StatusCode(500);
         }
-        return TypedResults.Created(result.Value);
     }
 
     static async Task<IResult> DeleteItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
     {
-        var session = await service.GetSession(sessionId);
-        if (session.IsFailed) { return TypedResults.NotFound(); }
-
-        var result = await service.DeleteItem(session.Value, itemId);
-
-        if (result.IsFailed)
+        try
         {
-            //add fail messages to log
-            return TypedResults.NotFound();
+            var session = await service.GetSession(sessionId);
+            if (session.IsFailed) { return TypedResults.NotFound(); }
+
+            var result = await service.DeleteItem(session.Value, itemId);
+
+            if (result.IsFailed)
+            {
+                return TypedResults.NotFound();
+            }
+            return TypedResults.NoContent();
         }
-        return TypedResults.NoContent();
+        catch(Exception ex)
+        {
+            Log.Fatal(ex, "Unhandled exception {@ex}", ex);
+            return TypedResults.StatusCode(500);
+        }
     }
 
     static async Task<IResult> GetBinaryItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
     {
-        var session = await service.GetSession(sessionId);
-        if (session.IsFailed) { return TypedResults.NotFound(); }
-
-        var result = service.GetBinaryItem(session.Value, itemId);
-
-        if (result.IsFailed)
+        try
         {
-            //add fail messages to log
-            return TypedResults.NotFound();
+            var session = await service.GetSession(sessionId);
+            if (session.IsFailed) { return TypedResults.NotFound(); }
+
+            var result = service.GetBinaryItem(session.Value, itemId);
+
+            if (result.IsFailed)
+            {
+                return TypedResults.NotFound();
+            }
+            return TypedResults.File(result.Value.Data!, MediaTypeNames.Application.Octet, result.Value.Filename);
         }
-        return TypedResults.File(result.Value.Data!, MediaTypeNames.Application.Octet, result.Value.Filename);
+        catch(Exception ex)
+        {
+            Log.Fatal(ex, "Unhandled exception {@ex}", ex);
+            return TypedResults.StatusCode(500);
+        }
     }
 }
