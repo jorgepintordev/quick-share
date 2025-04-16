@@ -38,3 +38,27 @@ This project is my personal solution — and an opportunity to explore new tech,
 
 - Docker & Docker Compose installed
 - .NET 8 SDK (for manual local builds)
+
+### Local Development
+
+```bash
+docker run -d --name local-redis -p 6379:6379 redis
+
+git clone https://github.com/jorgepintordev/quick-share.git
+cd quick-share/src
+docker-compose up --build
+```
+
+---
+## 🚧 MVP roadmap
+### API
+- Add serilog integration
+- remove hardcoded settings, use appsettings 
+- Add Seq/Graylog/Grafana/Prometheus
+- Unit test
+
+### Frontend
+- Create Vue project
+
+### Infra
+- Docker compose
