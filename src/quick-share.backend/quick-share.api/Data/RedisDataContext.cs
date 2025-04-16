@@ -7,10 +7,10 @@ public class RedisDataContext
     private static readonly ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost"); // Change for remote Redis
     private static readonly IDatabase db = redis.GetDatabase();
 
-    public async Task SaveValueAsync(string key, string value, TimeSpan? expiry = null)
+    public async Task<bool> SaveValueAsync(string key, string value, TimeSpan? expiry = null)
     {
         expiry ??= TimeSpan.FromDays(1); // Default expiration is 1 day
-        await db.StringSetAsync(key, value, expiry);
+        return await db.StringSetAsync(key, value, expiry);
     }
 
     public async Task<string?> GetValueAsync(string key)

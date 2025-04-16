@@ -1,14 +1,15 @@
+using FluentResults;
 using quick_share.api.Business.Models;
 
 namespace quick_share.api.Business.Contracts;
 
 public interface ISessionService
 {
-    Task<string> Start();
-    Task<Session?> GetSession(string sessionId);
-    Task<bool> End(string sessionId);
-    Task<string?> AddSimpleItem(Session session, string itemValue);
-    Task<string?> AddBinaryItem(Session session, IFormFile formFile);
-    Task<bool> DeleteItem(Session session, Guid itemId);
-    Task<SharedItemBinaryResult?> GetBinaryItem(Session session, Guid itemId);
+    Task<Result<string>> Start();
+    Task<Result<Session>> GetSession(string sessionId);
+    Task<Result> End(string sessionId);
+    Task<Result<string>> AddSimpleItem(Session session, string itemValue);
+    Task<Result<string>> AddBinaryItem(Session session, IFormFile formFile);
+    Task<Result> DeleteItem(Session session, Guid itemId);
+    Result<SharedItemBinaryResult> GetBinaryItem(Session session, Guid itemId);
 }

@@ -4,55 +4,73 @@ using quick_share.api.Business.Utils;
 using quick_share.api.Business.Extensions;
 using quick_share.api.Data;
 using System.Text.Json;
+using FluentResults;
+using quick_share.api.Business.Consts;
 
-namespace quick_share.api.Business;
+namespace quick_share.api.Business.Services;
 
 public class SessionService(RedisDataContext redis) : ISessionService
 {
-    public async Task<string> Start()
+    public async Task<Result<string>> Start()
     {
         var session = new Session { Id = Generator.NewId() };
-        await redis.SaveValueAsync(session.Id,session.ToString());
-        return session.Id;
+        var result = await redis.SaveValueAsync(session.Id,session.ToString());
+        if (!result)
+        {
+            return Result.Fail(SessionServiceErrors.SessionStartFail);
+        }
+
+        return Result.Ok(session.Id);
     }
 
-    public async Task<Session?> GetSession(string sessionId)
+    public async Task<Result<Session>> GetSession(string sessionId)
     {
-        //implememtar FluentResult y que regrese errors de validaciones que hay en los metodos en lugar de exceptions/null
-        // if (string.IsNullOrWhiteSpace(sessionId))
-        // {
-        //     return new { Error = "Session Id is empty" };
-        // }
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            return Result.Fail<Session>(SessionServiceErrors.SessionIdEmpty);
+        }
 
         var value = await redis.GetValueAsync(sessionId);
 
         if (string.IsNullOrWhiteSpace(value))
         {
-            //throw new KeyNotFoundException();
-            return null;
+            return Result.Fail<Session>(SessionServiceErrors.SessionNotFound);
         }
 
-        return JsonSerializer.Deserialize<Session>(value);
+        var sessionValue = JsonSerializer.Deserialize<Session>(value);
+        if (sessionValue is null)
+        {
+            return Result.Fail<Session>(SessionServiceErrors.DeserializeEmpty);
+        }
+
+        return Result.Ok(sessionValue);
     }
 
-    public async Task<bool> End(string sessionId)
+    public async Task<Result> End(string sessionId)
     {
-        return await redis.DeleteValueAsync(sessionId);
+        var result = await redis.DeleteValueAsync(sessionId);
+
+        return Result.OkIf(result, SessionServiceErrors.SessionNotFound);
     }
 
-    public async Task<string?> AddSimpleItem(Session session, string itemValue)
+    public async Task<Result<string>> AddSimpleItem(Session session, string itemValue)
     {
         // ArgumentNullException.ThrowIfNullOrWhiteSpace(itemValue); //para las validaciones ver mejor una clase de validaciones
         
         var newItem = new SharedItem { Id = Guid.NewGuid(), Value = itemValue };
         (session.Items ??= []).Add(newItem);
 
-        await redis.SaveValueAsync(session.Id,session.ToString());
+        var result = await redis.SaveValueAsync(session.Id,session.ToString());
 
-        return newItem.Id.ToString();
+        if (!result)
+        {
+            return Result.Fail<string>(SessionServiceErrors.SimpleItemAddFail);
+        }
+
+        return Result.Ok(newItem.Id.ToString());
     }
 
-    public async Task<string?> AddBinaryItem(Session session, IFormFile formFile)
+    public async Task<Result<string>> AddBinaryItem(Session session, IFormFile formFile)
     {
         string basePath = Directory.GetCurrentDirectory();
         string uploadPath = $"{basePath}/uploads/{session.Id}";
@@ -72,22 +90,28 @@ public class SessionService(RedisDataContext redis) : ISessionService
         } catch(Exception)
         {
             //log ex
-            return null;
+            return Result.Fail<string>(SessionServiceErrors.BinaryItemServerCopyFail);
         }
         
         // save data into redis
         (session.Items ??= []).Add(newItem);
-        await redis.SaveValueAsync(session.Id,session.ToString());
+        var result = await redis.SaveValueAsync(session.Id,session.ToString());
 
-        return newItem.Id.ToString();
+        if (!result)
+        {
+            //delete file?
+            return Result.Fail<string>(SessionServiceErrors.BinaryItemAddFail);
+        }
+
+        return Result.Ok(newItem.Id.ToString());
     }
 
-    public async Task<bool> DeleteItem(Session session, Guid itemId)
+    public async Task<Result> DeleteItem(Session session, Guid itemId)
     {
         var item = session.Items?.Find(item => item.ToSharedItem()?.Id == itemId);
 
         if (item is null)
-            return false;
+            return Result.Fail(SessionServiceErrors.SessionItemNotFound);
         
         session.Items?.Remove(item);
 
@@ -101,24 +125,33 @@ public class SessionService(RedisDataContext redis) : ISessionService
             string fileExtension = Path.GetExtension(itemBinary.Value);
             string filePath = $"{uploadPath}/{itemBinary.Id}{fileExtension}";
 
-            File.Delete(filePath);
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch(Exception)
+            {
+                //log ex
+                return Result.Fail(SessionServiceErrors.BinaryItemServerDeleteFail);
+            }
         }
 
-        await redis.SaveValueAsync(session.Id,session.ToString());
-        return true;
+        var result = await redis.SaveValueAsync(session.Id,session.ToString());
+
+        return Result.OkIf(result, SessionServiceErrors.SessionItemDeleteFail);
     }
 
-    public async Task<SharedItemBinaryResult?> GetBinaryItem(Session session, Guid itemId)
+    public Result<SharedItemBinaryResult> GetBinaryItem(Session session, Guid itemId)
     {
         var item = session.Items?.Find(item => item.ToSharedItem()?.Id == itemId);
 
         if (item is null)
-            return null;
+            return Result.Fail(SessionServiceErrors.SessionItemNotFound);
         
         var itemBinary = item?.ToSharedItemBinary();
 
         if (string.IsNullOrWhiteSpace(itemBinary?.FileExtension))
-            return null;
+            return Result.Fail(SessionServiceErrors.SessionBinaryItemNotFound);
         
         //return file
         string basePath = Directory.GetCurrentDirectory();
@@ -131,6 +164,6 @@ public class SessionService(RedisDataContext redis) : ISessionService
             Data = File.OpenRead(filePath)
         };
 
-        return result;
+        return Result.Ok(result);
     }
 }

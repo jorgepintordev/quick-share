@@ -23,65 +23,97 @@ public static class SessionEndpoints
 
     static async Task<IResult> GetStart([FromServices]ISessionService service)
     {
-        return TypedResults.Created(await service.Start());
+        var result = await service.Start();
+
+        if (result.IsFailed)
+        {
+            //add fail messages to log
+            return TypedResults.StatusCode(500);
+        }
+        return TypedResults.Created(result.Value);
     }
 
     static async Task<IResult> GetSession(string sessionId, [FromServices]ISessionService service)
     {
-        return await service.GetSession(sessionId)
-            is Session session
-                ? TypedResults.Ok(session)
-                : TypedResults.NotFound();
+        var result = await service.GetSession(sessionId);
+
+        if (result.IsFailed)
+        {
+            //add fail messages to log
+            return TypedResults.NotFound();
+        }
+        return TypedResults.Ok(result.Value);
     }
 
     static async Task<IResult> GetEnd(string sessionId, [FromServices]ISessionService service)
     {
-        return await service.End(sessionId)
-            ? TypedResults.NoContent()
-            : TypedResults.NotFound();
+        var result = await service.End(sessionId);
+
+        if (result.IsFailed)
+        {
+            //add fail messages to log
+            return TypedResults.NotFound();
+        }
+        return TypedResults.NoContent();
     }
 
     static async Task<IResult> PostSimpleItem(string sessionId, string value, [FromServices]ISessionService service)
     {
         var session = await service.GetSession(sessionId);
-        //validations should be moved to validation class
-        if (session is null) { return TypedResults.NotFound(); }
+        if (session.IsFailed) { return TypedResults.NotFound(); }
 
-        return TypedResults.Created(await service.AddSimpleItem(session, value));
+        var result = await service.AddSimpleItem(session.Value, value);
+
+        if (result.IsFailed)
+        {
+            //add fail messages to log
+            return TypedResults.StatusCode(500);
+        }
+        return TypedResults.Created(result.Value);
     }
 
     static async Task<IResult> PostBinaryItem(string sessionId, IFormFile formFile, [FromServices]ISessionService service)
     {
         var session = await service.GetSession(sessionId);
-        //validations should be moved to validation class
-        if (session is null) { return TypedResults.NotFound(); }
+        if (session.IsFailed) { return TypedResults.NotFound(); }
 
-        return await service.AddBinaryItem(session, formFile)
-            is string result
-                ? TypedResults.Created(result)
-                : TypedResults.StatusCode(500);
+        var result = await service.AddBinaryItem(session.Value, formFile);
+        
+        if (result.IsFailed)
+        {
+            //add fail messages to log
+            return TypedResults.StatusCode(500);
+        }
+        return TypedResults.Created(result.Value);
     }
 
     static async Task<IResult> DeleteItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
     {
         var session = await service.GetSession(sessionId);
-        //validations should be moved to validation class
-        if (session is null) { return TypedResults.NotFound(); }
+        if (session.IsFailed) { return TypedResults.NotFound(); }
 
-        return await service.DeleteItem(session, itemId)
-            ? TypedResults.NoContent()
-            : TypedResults.NotFound();
+        var result = await service.DeleteItem(session.Value, itemId);
+
+        if (result.IsFailed)
+        {
+            //add fail messages to log
+            return TypedResults.NotFound();
+        }
+        return TypedResults.NoContent();
     }
 
     static async Task<IResult> GetBinaryItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
     {
         var session = await service.GetSession(sessionId);
-        //validations should be moved to validation class
-        if (session is null) { return TypedResults.NotFound(); }
+        if (session.IsFailed) { return TypedResults.NotFound(); }
 
-        return await service.GetBinaryItem(session, itemId)
-            is SharedItemBinaryResult result
-            ? TypedResults.File(result.Data!, MediaTypeNames.Application.Octet, result.Filename)
-            : TypedResults.NotFound();
+        var result = service.GetBinaryItem(session.Value, itemId);
+
+        if (result.IsFailed)
+        {
+            //add fail messages to log
+            return TypedResults.NotFound();
+        }
+        return TypedResults.File(result.Value.Data!, MediaTypeNames.Application.Octet, result.Value.Filename);
     }
 }
