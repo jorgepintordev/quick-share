@@ -1,7 +1,7 @@
 using quick_share.api.Data;
 using quick_share.api.Endpoints;
-using quick_share.api.Logic;
-using quick_share.api.Logic.Contracts;
+using quick_share.api.Business;
+using quick_share.api.Business.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 

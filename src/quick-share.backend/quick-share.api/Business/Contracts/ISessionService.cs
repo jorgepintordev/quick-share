@@ -1,6 +1,6 @@
-using quick_share.api.Models;
+using quick_share.api.Business.Models;
 
-namespace quick_share.api.Logic.Contracts;
+namespace quick_share.api.Business.Contracts;
 
 public interface ISessionService
 {

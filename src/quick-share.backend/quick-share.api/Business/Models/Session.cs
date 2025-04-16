@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace quick_share.api.Models;
+namespace quick_share.api.Business.Models;
 
 public class Session
 {

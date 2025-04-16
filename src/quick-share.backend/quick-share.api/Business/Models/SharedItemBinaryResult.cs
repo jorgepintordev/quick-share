@@ -1,4 +1,4 @@
-namespace quick_share.api.Models;
+namespace quick_share.api.Business.Models;
 
 public class SharedItemBinaryResult
 {

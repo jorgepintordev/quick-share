@@ -1,7 +1,7 @@
 using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
-using quick_share.api.Logic.Contracts;
-using quick_share.api.Models;
+using quick_share.api.Business.Contracts;
+using quick_share.api.Business.Models;
 
 namespace quick_share.api.Endpoints;
 

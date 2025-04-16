@@ -1,10 +1,11 @@
-using quick_share.api.Models;
-using quick_share.api.Logic.Contracts;
-using quick_share.api.Logic.Utils;
+using quick_share.api.Business.Models;
+using quick_share.api.Business.Contracts;
+using quick_share.api.Business.Utils;
+using quick_share.api.Business.Extensions;
 using quick_share.api.Data;
 using System.Text.Json;
 
-namespace quick_share.api.Logic;
+namespace quick_share.api.Business;
 
 public class SessionService(RedisDataContext redis) : ISessionService
 {
@@ -17,6 +18,12 @@ public class SessionService(RedisDataContext redis) : ISessionService
 
     public async Task<Session?> GetSession(string sessionId)
     {
+        //implememtar FluentResult y que regrese errors de validaciones que hay en los metodos en lugar de exceptions/null
+        // if (string.IsNullOrWhiteSpace(sessionId))
+        // {
+        //     return new { Error = "Session Id is empty" };
+        // }
+
         var value = await redis.GetValueAsync(sessionId);
 
         if (string.IsNullOrWhiteSpace(value))

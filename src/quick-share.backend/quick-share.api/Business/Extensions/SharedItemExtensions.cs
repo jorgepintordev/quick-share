@@ -1,7 +1,7 @@
 using System.Text.Json;
-using quick_share.api.Models;
+using quick_share.api.Business.Models;
 
-namespace quick_share.api.Logic.Utils;
+namespace quick_share.api.Business.Extensions;
 
 public static class SharedItemExtensions
 {
