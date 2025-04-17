@@ -2,10 +2,9 @@ using StackExchange.Redis;
 
 namespace quick_share.api.Data;
 
-public class RedisDataContext
+public class RedisDataContext(IConnectionMultiplexer redis)
 {
-    private static readonly ConnectionMultiplexer redis = ConnectionMultiplexer.Connect("localhost"); // Change for remote Redis
-    private static readonly IDatabase db = redis.GetDatabase();
+    private readonly IDatabase db = redis.GetDatabase();
 
     public async Task<bool> SaveValueAsync(string key, string value, TimeSpan? expiry = null)
     {

@@ -53,7 +53,6 @@ docker-compose up --build
 ## 🚧 MVP roadmap
 ### API
 - Code Refactor, Service class into multiple services by functionality to have clear code
-- remove hardcoded settings, use appsettings 
 - Add Seq/Graylog/Grafana/Prometheus
 - Unit test
 

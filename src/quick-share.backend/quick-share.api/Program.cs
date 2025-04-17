@@ -6,6 +6,8 @@ using Serilog;
 using FluentValidation;
 using quick_share.api.Business.Validations;
 using quick_share.api.Business.Commands;
+using StackExchange.Redis;
+using quick_share.api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,18 @@ builder.Services.AddOpenApiDocument(config =>
     config.Title = "quick-share API v1";
     config.Version = "v1";
 });
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var redisConnection = builder.Configuration.GetConnectionString("Redis")
+        ?? throw new InvalidOperationException("Missing Redis connection string");
+
+    return ConnectionMultiplexer.Connect(redisConnection);
+});
+
+builder.Services.Configure<StorageOptions>(
+    builder.Configuration.GetSection(StorageOptions.Storage));
+
 
 builder.Services.AddScoped<RedisDataContext>();
 builder.Services.AddScoped<ISessionService, SessionService>();

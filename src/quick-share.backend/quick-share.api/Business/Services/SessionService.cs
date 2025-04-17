@@ -8,6 +8,8 @@ using FluentResults;
 using quick_share.api.Business.Consts;
 using quick_share.api.Business.Commands;
 using FluentValidation;
+using quick_share.api.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace quick_share.api.Business.Services;
 
@@ -19,7 +21,8 @@ public class SessionService(
     IValidator<AddSimpleItemCommand> addSimpleItemCommandValidator,
     IValidator<AddBinaryItemCommand> addBinaryItemCommandValidator,
     IValidator<DeleteItemCommand> deleteItemCommandValidator,
-    IValidator<GetBinaryItemCommand> getBinaryItemCommandValidator
+    IValidator<GetBinaryItemCommand> getBinaryItemCommandValidator,
+    IOptions<StorageOptions> storageOptions
     ) : ISessionService
 {
     public async Task<Result<string>> StartSession()
@@ -118,7 +121,9 @@ public class SessionService(
             return Result.Fail<string>(SessionServiceErrors.ValidationFail);
         }
 
-        string basePath = Directory.GetCurrentDirectory();
+        string basePath = string.IsNullOrWhiteSpace(storageOptions.Value.UploadFileStorage) 
+            ? Directory.GetCurrentDirectory()
+            : storageOptions.Value.UploadFileStorage;
         string uploadPath = $"{basePath}/uploads/{command.Session.Id}";
         string fileExtension = Path.GetExtension(command.FormFile.FileName);
         var newItem = new SharedItemBinary { Id = Guid.NewGuid(), Value = command.FormFile.FileName, FileExtension = fileExtension };
@@ -181,7 +186,9 @@ public class SessionService(
         if (!string.IsNullOrWhiteSpace(itemBinary?.FileExtension))
         {
             //delete file
-            string basePath = Directory.GetCurrentDirectory();
+            string basePath = string.IsNullOrWhiteSpace(storageOptions.Value.UploadFileStorage) 
+                ? Directory.GetCurrentDirectory()
+                : storageOptions.Value.UploadFileStorage;
             string uploadPath = $"{basePath}/uploads/{command.Session.Id}";
             string fileExtension = Path.GetExtension(itemBinary.Value);
             string filePath = $"{uploadPath}/{itemBinary.Id}{fileExtension}";
@@ -236,7 +243,9 @@ public class SessionService(
         }
         
         //return file
-        string basePath = Directory.GetCurrentDirectory();
+        string basePath = string.IsNullOrWhiteSpace(storageOptions.Value.UploadFileStorage) 
+            ? Directory.GetCurrentDirectory()
+            : storageOptions.Value.UploadFileStorage;
         string uploadPath = $"{basePath}/uploads/{command.Session.Id}";
         string fileExtension = Path.GetExtension(itemBinary.Value);
         string filePath = $"{uploadPath}/{itemBinary.Id}{fileExtension}";
