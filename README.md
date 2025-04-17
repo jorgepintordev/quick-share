@@ -52,7 +52,7 @@ docker-compose up --build
 ---
 ## 🚧 MVP roadmap
 ### API
-- Add serilog integration
+- Code Refactor, Service class into multiple services by functionality to have clear code
 - remove hardcoded settings, use appsettings 
 - Add Seq/Graylog/Grafana/Prometheus
 - Unit test

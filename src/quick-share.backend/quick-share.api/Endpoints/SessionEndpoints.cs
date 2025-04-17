@@ -1,5 +1,6 @@
 using System.Net.Mime;
 using Microsoft.AspNetCore.Mvc;
+using quick_share.api.Business.Commands;
 using quick_share.api.Business.Contracts;
 using Serilog;
 
@@ -25,7 +26,7 @@ public static class SessionEndpoints
     {
         try
         {
-            var result = await service.Start();
+            var result = await service.StartSession();
 
             if (result.IsFailed)
             {
@@ -44,7 +45,7 @@ public static class SessionEndpoints
     {
         try
         {
-            var result = await service.GetSession(sessionId);
+            var result = await service.GetSession(new GetSessionCommand(sessionId));
 
             if (result.IsFailed)
             {
@@ -63,7 +64,7 @@ public static class SessionEndpoints
     {
         try
         {
-            var result = await service.End(sessionId);
+            var result = await service.EndSession(new EndSessionCommand(sessionId));
 
             if (result.IsFailed)
             {
@@ -82,10 +83,10 @@ public static class SessionEndpoints
     {
         try
         {
-            var session = await service.GetSession(sessionId);
+            var session = await service.GetSession(new GetSessionCommand(sessionId));
             if (session.IsFailed) { return TypedResults.NotFound(); }
 
-            var result = await service.AddSimpleItem(session.Value, value);
+            var result = await service.AddSimpleItem(new AddSimpleItemCommand(session.Value, value));
 
             if (result.IsFailed)
             {
@@ -104,10 +105,10 @@ public static class SessionEndpoints
     {
         try
         {
-            var session = await service.GetSession(sessionId);
+            var session = await service.GetSession(new GetSessionCommand(sessionId));
             if (session.IsFailed) { return TypedResults.NotFound(); }
 
-            var result = await service.AddBinaryItem(session.Value, formFile);
+            var result = await service.AddBinaryItem(new AddBinaryItemCommand(session.Value, formFile));
             
             if (result.IsFailed)
             {
@@ -126,10 +127,10 @@ public static class SessionEndpoints
     {
         try
         {
-            var session = await service.GetSession(sessionId);
+            var session = await service.GetSession(new GetSessionCommand(sessionId));
             if (session.IsFailed) { return TypedResults.NotFound(); }
 
-            var result = await service.DeleteItem(session.Value, itemId);
+            var result = await service.DeleteItem(new DeleteItemCommand(session.Value, itemId));
 
             if (result.IsFailed)
             {
@@ -148,10 +149,10 @@ public static class SessionEndpoints
     {
         try
         {
-            var session = await service.GetSession(sessionId);
+            var session = await service.GetSession(new GetSessionCommand(sessionId));
             if (session.IsFailed) { return TypedResults.NotFound(); }
 
-            var result = service.GetBinaryItem(session.Value, itemId);
+            var result = service.GetBinaryItem(new GetBinaryItemCommand(session.Value, itemId));
 
             if (result.IsFailed)
             {

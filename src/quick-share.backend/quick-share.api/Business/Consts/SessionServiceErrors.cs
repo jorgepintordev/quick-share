@@ -2,9 +2,9 @@ namespace quick_share.api.Business.Consts;
 
 public static class SessionServiceErrors
 {
+    public static string ValidationFail = "Validation fail";
     public static string DeserializeEmpty = "Deserialize returned empty";
     public static string SessionStartFail = "Unable to start session";
-    public static string SessionIdEmpty = "Session Id is empty";
     public static string SessionNotFound = "Session not found";
     public static string SessionItemNotFound = "Session item not found";
     public static string SessionBinaryItemNotFound = "Session binary item not found";

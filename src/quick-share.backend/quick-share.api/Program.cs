@@ -3,6 +3,9 @@ using quick_share.api.Endpoints;
 using quick_share.api.Business.Services;
 using quick_share.api.Business.Contracts;
 using Serilog;
+using FluentValidation;
+using quick_share.api.Business.Validations;
+using quick_share.api.Business.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +22,12 @@ builder.Services.AddOpenApiDocument(config =>
 
 builder.Services.AddScoped<RedisDataContext>();
 builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<IValidator<GetSessionCommand>, GetSessionCommandValidator>();
+builder.Services.AddScoped<IValidator<EndSessionCommand>, EndSessionCommandValidator>();
+builder.Services.AddScoped<IValidator<AddSimpleItemCommand>, AddSimpleItemCommandValidator>();
+builder.Services.AddScoped<IValidator<AddBinaryItemCommand>, AddBinaryItemCommandValidator>();
+builder.Services.AddScoped<IValidator<DeleteItemCommand>, DeleteItemCommandValidator>();
+builder.Services.AddScoped<IValidator<GetBinaryItemCommand>, GetBinaryItemCommandValidator>();
 
 var app = builder.Build();
 
