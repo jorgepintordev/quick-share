@@ -14,15 +14,15 @@ using Microsoft.Extensions.Options;
 namespace quick_share.api.Business.Services;
 
 public class SessionService(
-    RedisDataContext redis, 
-    ILogger<SessionService> log,
-    IValidator<GetSessionCommand> getSessionCommandValidator,
-    IValidator<EndSessionCommand> endSessionCommandValidator,
-    IValidator<AddSimpleItemCommand> addSimpleItemCommandValidator,
-    IValidator<AddBinaryItemCommand> addBinaryItemCommandValidator,
-    IValidator<DeleteItemCommand> deleteItemCommandValidator,
-    IValidator<GetBinaryItemCommand> getBinaryItemCommandValidator,
-    IOptions<StorageOptions> storageOptions
+        RedisDataContext redis, 
+        ILogger<SessionService> log,
+        IValidator<GetSessionCommand> getSessionCommandValidator,
+        IValidator<EndSessionCommand> endSessionCommandValidator,
+        IValidator<AddSimpleItemCommand> addSimpleItemCommandValidator,
+        IValidator<AddBinaryItemCommand> addBinaryItemCommandValidator,
+        IValidator<DeleteItemCommand> deleteItemCommandValidator,
+        IValidator<GetBinaryItemCommand> getBinaryItemCommandValidator,
+        IOptions<StorageOptions> storageOptions
     ) : ISessionService
 {
     public async Task<Result<string>> StartSession()
@@ -31,11 +31,11 @@ public class SessionService(
         var result = await redis.SaveValueAsync(session.Id,session.ToString());
         if (!result)
         {
-            log.LogError(SessionServiceErrors.SessionStartFail);
-            return Result.Fail(SessionServiceErrors.SessionStartFail);
+            log.LogError(SessionServiceMessages.Error.SessionStartFail);
+            return Result.Fail(SessionServiceMessages.Error.SessionStartFail);
         }
 
-        log.LogTrace("Start session Ok {SessionId}", session.Id);
+        log.LogTrace(SessionServiceMessages.Trace.StartSessionOk, session.Id);
         return Result.Ok(session.Id);
     }
 
@@ -44,26 +44,26 @@ public class SessionService(
         var validationResult = getSessionCommandValidator.Validate(command);
         if (!validationResult.IsValid)
         {
-            log.LogError(SessionServiceErrors.ValidationFail + " {@Errors}", validationResult.Errors);
-            return Result.Fail<Session>(SessionServiceErrors.ValidationFail);
+            log.LogError(SessionServiceMessages.Error.ValidationFail + " {@Errors}", validationResult.Errors);
+            return Result.Fail<Session>(SessionServiceMessages.Error.ValidationFail);
         }
 
         var value = await redis.GetValueAsync(command.SessionId);
 
         if (string.IsNullOrWhiteSpace(value))
         {
-            log.LogError(SessionServiceErrors.SessionNotFound + " {SessionId}", command.SessionId);
-            return Result.Fail<Session>(SessionServiceErrors.SessionNotFound);
+            log.LogError(SessionServiceMessages.Error.SessionNotFound + " {SessionId}", command.SessionId);
+            return Result.Fail<Session>(SessionServiceMessages.Error.SessionNotFound);
         }
 
         var sessionValue = JsonSerializer.Deserialize<Session>(value);
         if (sessionValue is null)
         {
-            log.LogError(SessionServiceErrors.DeserializeEmpty + " {SessionId} {RedisValue}", command.SessionId, value);
-            return Result.Fail<Session>(SessionServiceErrors.DeserializeEmpty);
+            log.LogError(SessionServiceMessages.Error.DeserializeEmpty + " {SessionId} {RedisValue}", command.SessionId, value);
+            return Result.Fail<Session>(SessionServiceMessages.Error.DeserializeEmpty);
         }
 
-        log.LogTrace("Get session Ok {Session}", sessionValue);
+        log.LogTrace(SessionServiceMessages.Trace.GetSessionOk, sessionValue);
         return Result.Ok(sessionValue);
     }
 
@@ -72,19 +72,19 @@ public class SessionService(
         var validationResult = endSessionCommandValidator.Validate(command);
         if (!validationResult.IsValid)
         {
-            log.LogError(SessionServiceErrors.ValidationFail + " {@Errors}", validationResult.Errors);
-            return Result.Fail(SessionServiceErrors.ValidationFail);
+            log.LogError(SessionServiceMessages.Error.ValidationFail + " {@Errors}", validationResult.Errors);
+            return Result.Fail(SessionServiceMessages.Error.ValidationFail);
         }
 
         var result = await redis.DeleteValueAsync(command.SessionId);
 
         if (!result)
         {
-            log.LogError(SessionServiceErrors.SessionNotFound + " {SessionId}", command.SessionId);
-            return Result.Fail(SessionServiceErrors.SessionNotFound);
+            log.LogError(SessionServiceMessages.Error.SessionNotFound + " {SessionId}", command.SessionId);
+            return Result.Fail(SessionServiceMessages.Error.SessionNotFound);
         }
 
-        log.LogTrace("End session Ok {SessionId}", command.SessionId);
+        log.LogTrace(SessionServiceMessages.Trace.EndSessionOk, command.SessionId);
         return Result.Ok();
     }
 
@@ -93,8 +93,8 @@ public class SessionService(
         var validationResult = addSimpleItemCommandValidator.Validate(command);
         if (!validationResult.IsValid)
         {
-            log.LogError(SessionServiceErrors.ValidationFail + " {@Errors}", validationResult.Errors);
-            return Result.Fail<string>(SessionServiceErrors.ValidationFail);
+            log.LogError(SessionServiceMessages.Error.ValidationFail + " {@Errors}", validationResult.Errors);
+            return Result.Fail<string>(SessionServiceMessages.Error.ValidationFail);
         }
         
         var newItem = new SharedItem { Id = Guid.NewGuid(), Value = command.ItemValue };
@@ -104,11 +104,11 @@ public class SessionService(
 
         if (!result)
         {
-            log.LogError(SessionServiceErrors.SimpleItemAddFail + " {SessionId} {Item}", command.Session.Id, command.ItemValue);
-            return Result.Fail<string>(SessionServiceErrors.SimpleItemAddFail);
+            log.LogError(SessionServiceMessages.Error.SimpleItemAddFail + " {SessionId} {Item}", command.Session.Id, command.ItemValue);
+            return Result.Fail<string>(SessionServiceMessages.Error.SimpleItemAddFail);
         }
 
-        log.LogTrace("Add simple item into session Ok {SessionId} {ItemId}", command.Session.Id, newItem.Id);
+        log.LogTrace(SessionServiceMessages.Trace.AddSimpleItemOk, command.Session.Id, newItem.Id);
         return Result.Ok(newItem.Id.ToString());
     }
 
@@ -117,8 +117,8 @@ public class SessionService(
         var validationResult = addBinaryItemCommandValidator.Validate(command);
         if (!validationResult.IsValid)
         {
-            log.LogError(SessionServiceErrors.ValidationFail + " {@Errors}", validationResult.Errors);
-            return Result.Fail<string>(SessionServiceErrors.ValidationFail);
+            log.LogError(SessionServiceMessages.Error.ValidationFail + " {@Errors}", validationResult.Errors);
+            return Result.Fail<string>(SessionServiceMessages.Error.ValidationFail);
         }
 
         string basePath = string.IsNullOrWhiteSpace(storageOptions.Value.UploadFileStorage) 
@@ -135,16 +135,16 @@ public class SessionService(
         {
             //create directory path
             Directory.CreateDirectory(uploadPath);
-            log.LogTrace("Create server upload path completed {UploadPath}", uploadPath);
+            log.LogTrace(SessionServiceMessages.Trace.CreatedUploadPath, uploadPath);
 
             using var fileStream = File.Create(filePath);
             command.FormFile.CopyTo(fileStream);
             fileStream.Close();
-            log.LogTrace("Binary uploaded to server completed {FilePath}", filePath);
+            log.LogTrace(SessionServiceMessages.Trace.BinaryItemUploaded, filePath);
         } catch(Exception ex)
         {
-            log.LogError(ex, SessionServiceErrors.BinaryItemServerCopyFail + " {SessionId} {@Exception}", command.Session.Id, ex);
-            return Result.Fail<string>(SessionServiceErrors.BinaryItemServerCopyFail);
+            log.LogError(ex, SessionServiceMessages.Error.BinaryItemServerCopyFail + " {SessionId} {@Exception}", command.Session.Id, ex);
+            return Result.Fail<string>(SessionServiceMessages.Error.BinaryItemServerCopyFail);
         }
         
         // save data into redis
@@ -154,11 +154,11 @@ public class SessionService(
         if (!result)
         {
             //delete file?
-            log.LogError(SessionServiceErrors.BinaryItemAddFail + " {SessionId}", command.Session.Id);
-            return Result.Fail<string>(SessionServiceErrors.BinaryItemAddFail);
+            log.LogError(SessionServiceMessages.Error.BinaryItemAddFail + " {SessionId}", command.Session.Id);
+            return Result.Fail<string>(SessionServiceMessages.Error.BinaryItemAddFail);
         }
 
-        log.LogTrace("Add binary item into session Ok {SessionId} {ItemId}", command.Session.Id, newItem.Id);
+        log.LogTrace(SessionServiceMessages.Trace.AddBinaryItemOk, command.Session.Id, newItem.Id);
         return Result.Ok(newItem.Id.ToString());
     }
 
@@ -167,16 +167,16 @@ public class SessionService(
         var validationResult = deleteItemCommandValidator.Validate(command);
         if (!validationResult.IsValid)
         {
-            log.LogError(SessionServiceErrors.ValidationFail + " {@Errors}", validationResult.Errors);
-            return Result.Fail(SessionServiceErrors.ValidationFail);
+            log.LogError(SessionServiceMessages.Error.ValidationFail + " {@Errors}", validationResult.Errors);
+            return Result.Fail(SessionServiceMessages.Error.ValidationFail);
         }
 
         var item = command.Session.Items?.Find(item => item.ToSharedItem()?.Id == command.ItemId);
 
         if (item is null)
         {
-            log.LogError(SessionServiceErrors.SessionItemNotFound + " {SessionId} {ItemId}", command.Session.Id, command.ItemId);
-            return Result.Fail(SessionServiceErrors.SessionItemNotFound);
+            log.LogError(SessionServiceMessages.Error.SessionItemNotFound + " {SessionId} {ItemId}", command.Session.Id, command.ItemId);
+            return Result.Fail(SessionServiceMessages.Error.SessionItemNotFound);
         }
         
         command.Session.Items?.Remove(item);
@@ -196,12 +196,12 @@ public class SessionService(
             try
             {
                 File.Delete(filePath);
-                log.LogTrace("Binary deleted from server completed {FilePath}", filePath);
+                log.LogTrace(SessionServiceMessages.Trace.BinaryItemDeleted, filePath);
             }
             catch(Exception ex)
             {
-                log.LogError(ex, SessionServiceErrors.BinaryItemServerDeleteFail + " {SessionId} {ItemId} {@Exception}", command.Session.Id, command.ItemId, ex);
-                return Result.Fail(SessionServiceErrors.BinaryItemServerDeleteFail);
+                log.LogError(ex, SessionServiceMessages.Error.BinaryItemServerDeleteFail + " {SessionId} {ItemId} {@Exception}", command.Session.Id, command.ItemId, ex);
+                return Result.Fail(SessionServiceMessages.Error.BinaryItemServerDeleteFail);
             }
         }
 
@@ -209,11 +209,11 @@ public class SessionService(
 
         if (!result)
         {
-            log.LogError(SessionServiceErrors.SessionItemDeleteFail + " {SessionId} {ItemId}", command.Session.Id, command.ItemId);
-            return Result.Fail(SessionServiceErrors.SessionItemDeleteFail);
+            log.LogError(SessionServiceMessages.Error.SessionItemDeleteFail + " {SessionId} {ItemId}", command.Session.Id, command.ItemId);
+            return Result.Fail(SessionServiceMessages.Error.SessionItemDeleteFail);
         }
 
-        log.LogTrace("Delete item from session Ok {SessionId} {ItemId}", command.Session.Id, command.ItemId);
+        log.LogTrace(SessionServiceMessages.Trace.DeleteItemOk, command.Session.Id, command.ItemId);
         return Result.Ok();
     }
 
@@ -222,24 +222,24 @@ public class SessionService(
         var validationResult = getBinaryItemCommandValidator.Validate(command);
         if (!validationResult.IsValid)
         {
-            log.LogError(SessionServiceErrors.ValidationFail + " {@Errors}", validationResult.Errors);
-            return Result.Fail<SharedItemBinaryResult>(SessionServiceErrors.ValidationFail);
+            log.LogError(SessionServiceMessages.Error.ValidationFail + " {@Errors}", validationResult.Errors);
+            return Result.Fail<SharedItemBinaryResult>(SessionServiceMessages.Error.ValidationFail);
         }
 
         var item = command.Session.Items?.Find(item => item.ToSharedItem()?.Id == command.ItemId);
 
         if (item is null)
         {
-            log.LogError(SessionServiceErrors.SessionItemNotFound + " {SessionId} {ItemId}", command.Session.Id, command.ItemId);
-            return Result.Fail(SessionServiceErrors.SessionItemNotFound);
+            log.LogError(SessionServiceMessages.Error.SessionItemNotFound + " {SessionId} {ItemId}", command.Session.Id, command.ItemId);
+            return Result.Fail(SessionServiceMessages.Error.SessionItemNotFound);
         }
         
         var itemBinary = item?.ToSharedItemBinary();
 
         if (string.IsNullOrWhiteSpace(itemBinary?.FileExtension))
         {
-            log.LogError(SessionServiceErrors.SessionBinaryItemNotFound + " {SessionId} {@Item}", command.Session.Id, itemBinary);
-            return Result.Fail(SessionServiceErrors.SessionBinaryItemNotFound);
+            log.LogError(SessionServiceMessages.Error.SessionBinaryItemNotFound + " {SessionId} {@Item}", command.Session.Id, itemBinary);
+            return Result.Fail(SessionServiceMessages.Error.SessionBinaryItemNotFound);
         }
         
         //return file
@@ -257,13 +257,13 @@ public class SessionService(
                 Data = File.OpenRead(filePath)
             };
 
-            log.LogTrace("Get binary item from session Ok {SessionId} {ItemId}", command.Session.Id, command.ItemId);
+            log.LogTrace(SessionServiceMessages.Trace.GetBinaryItemOk, command.Session.Id, command.ItemId);
             return Result.Ok(result);
         }
         catch(Exception ex)
         {
-            log.LogError(ex, SessionServiceErrors.BinaryItemGetFail + " {SessionId} {ItemId} {@Exception}", command.Session.Id, command.ItemId, ex);
-            return Result.Fail(SessionServiceErrors.BinaryItemGetFail);
+            log.LogError(ex, SessionServiceMessages.Error.BinaryItemGetFail + " {SessionId} {ItemId} {@Exception}", command.Session.Id, command.ItemId, ex);
+            return Result.Fail(SessionServiceMessages.Error.BinaryItemGetFail);
         }
     }
 }

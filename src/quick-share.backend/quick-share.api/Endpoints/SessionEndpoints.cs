@@ -13,16 +13,16 @@ public static class SessionEndpoints
         //Added .DisableAntiforgery() to be able to upload files, auth should be added to the api
         var groupItems = app.MapGroup("/session").DisableAntiforgery();
 
-        groupItems.MapGet("/start", GetStart);
+        groupItems.MapPost("/start", PostStart);
         groupItems.MapGet("/{sessionId}", GetSession);
-        groupItems.MapGet("/{sessionId}/end", GetEnd);
+        groupItems.MapPost("/{sessionId}/end", PostEnd);
         groupItems.MapPost("/{sessionId}/simpleItem", PostSimpleItem);
         groupItems.MapPost("/{sessionId}/binaryItem", PostBinaryItem);
         groupItems.MapDelete("/{sessionId}/{itemId}", DeleteItem);
         groupItems.MapGet("/{sessionId}/{itemId}", GetBinaryItem);
     }
 
-    static async Task<IResult> GetStart([FromServices]ISessionService service)
+    static async Task<IResult> PostStart([FromServices]ISessionService service)
     {
         try
         {
@@ -60,7 +60,7 @@ public static class SessionEndpoints
         }
     }
 
-    static async Task<IResult> GetEnd(string sessionId, [FromServices]ISessionService service)
+    static async Task<IResult> PostEnd(string sessionId, [FromServices]ISessionService service)
     {
         try
         {
