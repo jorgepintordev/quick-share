@@ -12,7 +12,7 @@ public static class MaintenanceEndpoints
         groupItems.MapPost("/files/cleanup", PostFileCleanup);
     }
 
-    static async Task<IResult> PostFileCleanup([FromServices]IMaintenanceService service)
+    public static async Task<IResult> PostFileCleanup([FromServices]IMaintenanceService service)
     {
         try
         {
