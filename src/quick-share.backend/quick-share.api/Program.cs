@@ -36,6 +36,7 @@ builder.Services.Configure<StorageOptions>(
 
 builder.Services.AddScoped<RedisDataContext>();
 builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<IMaintenanceService, MaintenanceService>();
 builder.Services.AddScoped<IValidator<GetSessionCommand>, GetSessionCommandValidator>();
 builder.Services.AddScoped<IValidator<EndSessionCommand>, EndSessionCommandValidator>();
 builder.Services.AddScoped<IValidator<AddSimpleItemCommand>, AddSimpleItemCommandValidator>();
@@ -60,5 +61,6 @@ if (app.Environment.IsDevelopment())
 app.UseSerilogRequestLogging();
 
 app.MapSessionEndpoints();
+app.MapMaintenanceEndpoints();
 
 app.Run();
