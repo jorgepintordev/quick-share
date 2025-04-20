@@ -22,7 +22,7 @@ public static class SessionEndpoints
         groupItems.MapGet("/{sessionId}/{itemId}", GetBinaryItem);
     }
 
-    static async Task<IResult> PostStart([FromServices]ISessionService service)
+    public static async Task<IResult> PostStart([FromServices]ISessionService service)
     {
         try
         {
@@ -41,7 +41,7 @@ public static class SessionEndpoints
         }
     }
 
-    static async Task<IResult> GetSession(string sessionId, [FromServices]ISessionService service)
+    public static async Task<IResult> GetSession(string sessionId, [FromServices]ISessionService service)
     {
         try
         {
@@ -60,7 +60,7 @@ public static class SessionEndpoints
         }
     }
 
-    static async Task<IResult> PostEnd(string sessionId, [FromServices]ISessionService service)
+    public static async Task<IResult> PostEnd(string sessionId, [FromServices]ISessionService service)
     {
         try
         {
@@ -79,7 +79,7 @@ public static class SessionEndpoints
         }
     }
 
-    static async Task<IResult> PostSimpleItem(string sessionId, [FromBody]string value, [FromServices]ISessionService service)
+    public static async Task<IResult> PostSimpleItem(string sessionId, [FromBody]string value, [FromServices]ISessionService service)
     {
         try
         {
@@ -101,7 +101,7 @@ public static class SessionEndpoints
         }
     }
 
-    static async Task<IResult> PostBinaryItem(string sessionId, IFormFile formFile, [FromServices]ISessionService service)
+    public static async Task<IResult> PostBinaryItem(string sessionId, IFormFile formFile, [FromServices]ISessionService service)
     {
         try
         {
@@ -123,7 +123,7 @@ public static class SessionEndpoints
         }
     }
 
-    static async Task<IResult> DeleteItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
+    public static async Task<IResult> DeleteItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
     {
         try
         {
@@ -145,7 +145,7 @@ public static class SessionEndpoints
         }
     }
 
-    static async Task<IResult> GetBinaryItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
+    public static async Task<IResult> GetBinaryItem(string sessionId, Guid itemId, [FromServices]ISessionService service)
     {
         try
         {
