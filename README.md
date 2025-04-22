@@ -16,7 +16,7 @@ This project is my personal solution — and an opportunity to explore new tech,
 
 - **Backend:** .NET 8 Minimal API, Redis (ephemeral storage), Serilog (logging)
 - **Frontend:** Vue.js 3
-- **DevOps:** Docker (local deployment), Jenkins CI/CD (in progress)
+- **DevOps:** Docker (local deployment), Jenkins CI/CD (coming)
 - **Monitoring/Logging:** Serilog (Grafana/Prometheus planned)
 - **Infrastructure:** Local homelab server (Kubernetes experimentation coming)
 
@@ -43,6 +43,8 @@ This project is my personal solution — and an opportunity to explore new tech,
 
 ```bash
 docker run -d --name local-redis -p 6379:6379 redis
+docker run -d --name local-seq --restart unless-stopped -e ACCEPT_EULA=Y -p 5341:5341 -p 8080:80 datalust/seq:latest
+
 
 git clone https://github.com/jorgepintordev/quick-share.git
 cd quick-share/src
@@ -52,7 +54,7 @@ docker-compose up --build
 ---
 ## 🚧 MVP roadmap
 ### API
-- Add Seq/Graylog/Grafana/Prometheus
+- Add Opentelemetry
 - Unit test
 
 ### Frontend
