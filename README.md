@@ -42,10 +42,6 @@ This project is my personal solution — and an opportunity to explore new tech,
 ### Local Development
 
 ```bash
-docker run -d --name local-redis -p 6379:6379 redis
-docker run -d --name local-seq --restart unless-stopped -e ACCEPT_EULA=Y -p 5341:5341 -p 8080:80 datalust/seq:latest
-
-
 git clone https://github.com/jorgepintordev/quick-share.git
 cd quick-share/src
 docker-compose up --build
@@ -59,6 +55,3 @@ docker-compose up --build
 
 ### Frontend
 - Create Vue project
-
-### Infra
-- Docker compose

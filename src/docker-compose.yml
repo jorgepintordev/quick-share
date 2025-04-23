@@ -1,0 +1,24 @@
+services:
+  quick-share.api:
+    container_name: quick-share.api
+    build: quick-share.backend/quick-share.api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=DEVELOPMENT
+      - ASPNETCORE_HTTP_PORTS=8080
+      # - ASPNETCORE_HTTPS_PORTS=8081
+    ports:
+      - "8080:8080"
+      # - "8081:8081"
+
+  quick-share.redis:
+    image: redis:latest
+    container_name: quick-share.redis
+  
+  quick-share.seq:
+    image: datalust/seq:latest
+    container_name: quick-share.seq
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:5341"
+      - "8082:80"
